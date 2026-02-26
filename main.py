@@ -1,0 +1,36 @@
+import telebot
+import yt_dlp
+import os
+
+TOKEN = os.getenv("TOKEN")
+
+bot = telebot.TeleBot(TOKEN)
+
+@bot.message_handler(commands=['start'])
+def start(message):
+    bot.reply_to(message, "Отправь ссылку с YouTube, TikTok или Instagram")
+
+@bot.message_handler(func=lambda message: True)
+def download(message):
+    url = message.text
+    
+    ydl_opts = {
+        'format': 'best',
+        'outtmpl': 'video.%(ext)s',
+        'noplaylist': True
+    }
+    
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=True)
+            filename = ydl.prepare_filename(info)
+
+        with open(filename, 'rb') as video:
+            bot.send_video(message.chat.id, video)
+
+        os.remove(filename)
+
+    except:
+        bot.reply_to(message, "Ошибка. Проверь ссылку.")
+
+bot.polling()
